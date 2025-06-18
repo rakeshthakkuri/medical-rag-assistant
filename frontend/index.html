@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🩺 Health Report Assistant</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>🩺 Health Report Assistant</h1>
+
+    <!-- File Upload -->
+    <div class="card">
+      <h2>1️⃣ Upload your medical report (PDF)</h2>
+      <input type="file" id="fileInput" accept=".pdf" />
+      <button onclick="uploadReport()">Upload</button>
+      <p id="uploadStatus"></p>
+    </div>
+
+    <!-- Ask Question -->
+    <div class="card">
+      <h2>2️⃣ Ask a question about your report or health</h2>
+      <input type="text" id="questionInput" placeholder="e.g., What is hypertension?" />
+      <button onclick="askQuestion()">Ask</button>
+      <p id="questionStatus"></p>
+    </div>
+
+    <!-- Answer Display -->
+    <div class="card" id="answerCard" style="display: none;">
+      <h2>💡 Answer</h2>
+      <p id="answerText"></p>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
