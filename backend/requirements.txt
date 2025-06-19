@@ -1,9 +1,9 @@
-pymupdf
+pymupdf==1.23.9
 sentence-transformers 
-qdrant-client
-google-generativeai
-python-dotenv 
-fastapi
-pydantic
-uvicorn[standard]
-python-multipart
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+python-dotenv==1.0.0
+pydantic==2.5.0
+qdrant-client==1.7.0
+google-generativeai==0.3.2
