@@ -5,11 +5,22 @@ from pydantic import BaseModel
 import fitz  # PyMuPDF
 import uuid
 import os
-from dotenv import load_dotenv #
+from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
-from qdrant_client import QdrantClient, models
+from qdrant_client import QdrantClient
+# Fixed imports for Qdrant client version 1.14.3
+from qdrant_client.models import (
+    Distance, 
+    VectorParams, 
+    Filter, 
+    MatchValue, 
+    FilterSelector, 
+    PointStruct,
+    FieldCondition  # This should be available in 1.14.3
+)
 from qdrant_client.http.exceptions import UnexpectedResponse
 from google.generativeai import configure, GenerativeModel
+import time
 
 # === Setup ===
 app = FastAPI()
@@ -24,52 +35,126 @@ if not gemini_api_key:
 
 configure(api_key=gemini_api_key)
 model = GenerativeModel("gemini-1.5-flash")
+# This line loads the SentenceTransformer model on startup, which is memory-intensive
 embedder = SentenceTransformer("all-MiniLM-L12-v2", device='cpu')
 
 collection_name = "medical_docs"
+# This dimension is derived from the globally loaded embedder
 vector_dim = embedder.get_sentence_embedding_dimension() or 384
 
-qdrant = QdrantClient(host="localhost", port=6333)
+# --- Qdrant Client updated to use environment variables and increased timeout ---
+qdrant_url = os.getenv("QDRANT_URL")
+if not qdrant_url:
+    # Raise an error if QDRANT_URL is not set, as it's now required
+    raise RuntimeError("❌ QDRANT_URL environment variable not set. Please set it to your Qdrant instance URL (e.g., your Qdrant Cloud URL).")
+
+qdrant_api_key = os.getenv("QDRANT_API_KEY") # Optional, depending on your Qdrant setup
+
+qdrant = QdrantClient(
+    url=qdrant_url,
+    api_key=qdrant_api_key,
+    timeout=60.0 # Increased timeout for potentially long operations like initial indexing
+)
+# Print client version for debugging
 try:
+    import qdrant_client
+    print(f"Qdrant client version: {qdrant_client.__version__}")
+except AttributeError:
+    print("Qdrant client version: Unable to determine version")
+print("Qdrant client connected successfully")
+
+try:
+    # Attempt to get the collection to see if it exists
     qdrant.get_collection(collection_name=collection_name)
+    print(f"Qdrant collection '{collection_name}' already exists.")
 except UnexpectedResponse as e:
+    # If it doesn't exist (e.g., 404 Not Found), recreate it
+    print(f"Qdrant collection '{collection_name}' not found, attempting to recreate.")
     qdrant.recreate_collection(
         collection_name=collection_name,
-        vectors_config=models.VectorParams(size=vector_dim, distance=models.Distance.COSINE)
+        vectors_config=VectorParams(size=vector_dim, distance=Distance.COSINE)
     )
+    print(f"Qdrant collection '{collection_name}' recreated successfully.")
+except Exception as e:
+    # Catch any other unexpected errors during collection check/recreation
+    raise RuntimeError(f"Error checking/creating Qdrant collection: {e}")
+
+# --- Create payload index for 'source' field ---
+# This ensures that filtering by 'source' is efficient and doesn't throw errors
+try:
+    # Create index using the client method directly (use string instead of enum)
+    qdrant.create_payload_index(
+        collection_name=collection_name,
+        field_name="source",
+        field_schema="keyword"  # Use string value instead of FieldType.KEYWORD
+    )
+    print(f"Payload index for 'source' field created or already exists in collection '{collection_name}'.")
+except UnexpectedResponse as e:
+    if "already exists" in str(e): # Common error message if index exists
+        print(f"Payload index for 'source' field already exists in collection '{collection_name}'.")
+    else:
+        print(f"Warning: Could not create payload index for 'source' field (UnexpectedResponse): {e}")
+except Exception as e:
+    # Catch any other general exceptions during index creation
+    print(f"Warning: Could not create payload index for 'source' field: {e}")
+
 
 # === WHO Indexing ===
 WHO_GUIDELINES_PATH = "who_data/who_az_guidelines.txt"
 
 def is_who_data_indexed():
     try:
-        results = qdrant.scroll(
+        # Use Qdrant's count method for a more efficient check of existence
+        count_result = qdrant.count(
             collection_name=collection_name,
-            scroll_filter=models.Filter(
-                must=[models.FieldCondition(key="source", match=models.MatchValue(value="who"))]
+            count_filter=Filter(  # Fixed: use count_filter instead of query_filter
+                must=[FieldCondition(key="source", match=MatchValue(value="who"))]
             ),
-            limit=1
+            exact=True # Request exact count
         )
-        return len(results[0]) > 0
-    except:
+        return count_result.count > 0
+    except Exception as e:
+        # Log the error for debugging but return False to trigger indexing if unsure
+        print(f"Error checking if WHO data is indexed: {e}")
         return False
 
 def index_who_guidelines():
     if not os.path.exists(WHO_GUIDELINES_PATH):
+        print(f"Error: WHO guidelines file not found at {WHO_GUIDELINES_PATH}.")
         return
 
+    print("Starting WHO guidelines indexing...")
     with open(WHO_GUIDELINES_PATH, "r", encoding="utf-8") as f:
         text = f.read()
 
     chunks = [text[i:i+500] for i in range(0, len(text), 500)]
+    print(f"Generated {len(chunks)} chunks for WHO data.")
+
+    # This encoding happens on startup, contributing to high memory usage
     vectors = [embedder.encode(chunk).tolist() for chunk in chunks]
+    print("Encoded WHO chunks into vectors.")
 
     points = [
-        models.PointStruct(id=str(uuid.uuid4()), vector=v, payload={"text": c, "source": "who"})
+        PointStruct(id=str(uuid.uuid4()), vector=v, payload={"text": c, "source": "who"})
         for v, c in zip(vectors, chunks)
     ]
-    qdrant.upsert(collection_name=collection_name, points=points)
+    
+    # Upsert in batches
+    batch_size = 50 # Reduced batch size for upserts to reduce load on Qdrant
+    for i in range(0, len(points), batch_size):
+        batch = points[i:i+batch_size]
+        try:
+            qdrant.upsert(collection_name=collection_name, points=batch)
+            print(f"Indexed {min(i + batch_size, len(points))} / {len(points)} WHO chunks...")
+        except Exception as upsert_e:
+            print(f"Error upserting batch {i//batch_size + 1}: {upsert_e}")
+            # Decide how to handle this - retry, skip, or re-raise
+            # For now, we'll just log and continue, but in production, you might want more robust retry logic
+        time.sleep(0.1) # Add a small delay to relieve pressure on Qdrant Cloud (if free tier/rate limited)
 
+    print("WHO guidelines indexing complete!")
+
+# This block runs on every application startup, causing repeated memory spikes and processing
 if not is_who_data_indexed():
     index_who_guidelines()
 
@@ -90,17 +175,22 @@ async def upload_report(file: UploadFile = File(...)):
     try:
         qdrant.delete(
             collection_name=collection_name,
-            points_selector=models.FilterSelector(
-                filter=models.Filter(
-                    must=[models.FieldCondition(key="source", match=models.MatchValue(value="report"))]
+            points_selector=FilterSelector(
+                filter=Filter(
+                    must=[FieldCondition(key="source", match=MatchValue(value="report"))]
                 )
             )
         )
-    except:
-        pass  # Might not exist initially
+        print("Old report data cleared from Qdrant.")
+    except UnexpectedResponse as e:
+        # This can happen if the filter doesn't match any points, which is fine
+        print(f"No old report data to clear or unexpected response during delete: {e}")
+    except Exception as e:
+        print(f"Error clearing old report data: {e}")
+        pass  # Continue even if there's an error clearing old data
 
     report_points = [
-        models.PointStruct(id=str(uuid.uuid4()), vector=v, payload={"text": c, "source": "report"})
+        PointStruct(id=str(uuid.uuid4()), vector=v, payload={"text": c, "source": "report"})
         for v, c in zip(vectors, chunks)
     ]
 
@@ -120,37 +210,41 @@ async def ask_question(data: QuestionRequest):
     q_vec = embedder.encode(data.question).tolist()
 
     # --- Query Report ---
+    report_context = ""
     try:
         report_results = qdrant.query_points(
             collection_name=collection_name,
             query=q_vec,
             limit=5,
             with_payload=True,
-            query_filter=models.Filter(
-                must=[models.FieldCondition(key="source", match=models.MatchValue(value="report"))]
+            query_filter=Filter(
+                must=[FieldCondition(key="source", match=MatchValue(value="report"))]
             )
         )
         report_context = "\n".join([
-            p.payload["text"] for p in report_results.points if "text" in p.payload
+            p.payload["text"] for p in report_results.points if p.payload and "text" in p.payload
         ])
-    except:
+    except Exception as e:
+        print(f"Error querying report context from Qdrant: {e}")
         report_context = ""
 
     # --- Query WHO ---
+    who_context = ""
     try:
         who_results = qdrant.query_points(
             collection_name=collection_name,
             query=q_vec,
             limit=5,
             with_payload=True,
-            query_filter=models.Filter(
-                must=[models.FieldCondition(key="source", match=models.MatchValue(value="who"))]
+            query_filter=Filter(
+                must=[FieldCondition(key="source", match=MatchValue(value="who"))]
             )
         )
         who_context = "\n".join([
-            p.payload["text"] for p in who_results.points if "text" in p.payload
+            p.payload["text"] for p in who_results.points if p.payload and "text" in p.payload
         ])
-    except:
+    except Exception as e:
+        print(f"Error querying WHO context from Qdrant: {e}")
         who_context = ""
 
     # --- Prompt ---

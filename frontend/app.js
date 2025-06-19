@@ -1,4 +1,4 @@
-const backendUrl = "http://localhost:8000"; // Adjust if deployed
+const backendUrl = "http://localhost:8000";
 
 async function uploadReport() {
   const fileInput = document.getElementById("fileInput");
