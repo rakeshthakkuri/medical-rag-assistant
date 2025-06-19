@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: health-backend
+    env: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: bash backend/start.sh
+    rootDir: backend
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false

@@ -1,11 +1,1 @@
-pymupdf
-sentence-transformers 
-qdrant-client
-google-generativeai
-python-dotenv
-streamlit 
-fastapi
-pydantic
-uvicorn[standard]
-python-multipart
 bs4

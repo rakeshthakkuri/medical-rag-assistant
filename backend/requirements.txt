@@ -1,0 +1,9 @@
+pymupdf
+sentence-transformers 
+qdrant-client
+google-generativeai
+python-dotenv 
+fastapi
+pydantic
+uvicorn[standard]
+python-multipart
