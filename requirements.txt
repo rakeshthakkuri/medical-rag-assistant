@@ -8,3 +8,4 @@ fastapi
 pydantic
 uvicorn[standard]
 python-multipart
+bs4

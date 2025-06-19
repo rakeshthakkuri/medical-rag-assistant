@@ -39,7 +39,7 @@ except UnexpectedResponse as e:
     )
 
 # === WHO Indexing ===
-WHO_GUIDELINES_PATH = "who_guidelines.txt"
+WHO_GUIDELINES_PATH = "who_data/who_az_guidelines.txt"
 
 def is_who_data_indexed():
     try:
