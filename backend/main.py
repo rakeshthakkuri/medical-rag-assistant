@@ -8,6 +8,7 @@ import os
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
+from sentence_transformers import CrossEncoder
 # Fixed imports for Qdrant client version 1.14.3
 from qdrant_client.models import (
     Distance, 
@@ -37,6 +38,8 @@ configure(api_key=gemini_api_key)
 model = GenerativeModel("gemini-1.5-flash")
 # This line loads the SentenceTransformer model on startup, which is memory-intensive
 embedder = SentenceTransformer("all-MiniLM-L12-v2", device='cpu')
+
+reranker = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
 
 collection_name = "medical_docs"
 # This dimension is derived from the globally loaded embedder
@@ -154,6 +157,20 @@ def index_who_guidelines():
 
     print("WHO guidelines indexing complete!")
 
+def rerank_chunks(question: str, chunks: list[str], top_k=3) -> list[str]:
+    if not chunks:
+        return []
+
+    pairs = [(question, chunk) for chunk in chunks]
+    scores = reranker.predict(pairs)
+
+    # Sort chunks based on scores descending
+    ranked = sorted(zip(chunks, scores), key=lambda x: x[1], reverse=True)
+    top_chunks = [chunk for chunk, _ in ranked[:top_k]]
+    
+    return top_chunks
+
+
 # This block runs on every application startup, causing repeated memory spikes and processing
 if not is_who_data_indexed():
     index_who_guidelines()
@@ -221,9 +238,9 @@ async def ask_question(data: QuestionRequest):
                 must=[FieldCondition(key="source", match=MatchValue(value="report"))]
             )
         )
-        report_context = "\n".join([
-            p.payload["text"] for p in report_results.points if p.payload and "text" in p.payload
-        ])
+        report_chunks = [p.payload["text"] for p in report_results.points if p.payload and "text" in p.payload]
+        report_context = "\n".join(rerank_chunks(data.question, report_chunks, top_k=3))
+        print(type(report_chunks))
     except Exception as e:
         print(f"Error querying report context from Qdrant: {e}")
         report_context = ""
@@ -240,13 +257,14 @@ async def ask_question(data: QuestionRequest):
                 must=[FieldCondition(key="source", match=MatchValue(value="who"))]
             )
         )
-        who_context = "\n".join([
-            p.payload["text"] for p in who_results.points if p.payload and "text" in p.payload
-        ])
+        who_chunks = [p.payload["text"] for p in who_results.points if p.payload and "text" in p.payload]
+        who_context = "\n".join(rerank_chunks(data.question, who_chunks, top_k=3))
+
     except Exception as e:
         print(f"Error querying WHO context from Qdrant: {e}")
         who_context = ""
-
+    print(report_context)
+    print(who_context)
     # --- Prompt ---
     prompt = f"""You are a helpful health assistant.
 

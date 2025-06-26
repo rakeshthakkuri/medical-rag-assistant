@@ -3,3 +3,6 @@
 venvv/
 .vscode/
 backend/__pycache__
+*.pyc
+*.log
+__pycache__/

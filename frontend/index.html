@@ -1,38 +1,150 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>🩺 Health Report Assistant</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🩺 Health Report Assistant</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts - Inter and Open Sans for modern typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="container">
-    <h1>🩺 Health Report Assistant</h1>
-
-    <!-- File Upload -->
-    <div class="card">
-      <h2>1️⃣ Upload your medical report (PDF)</h2>
-      <input type="file" id="fileInput" accept=".pdf" />
-      <button onclick="uploadReport()">Upload</button>
-      <p id="uploadStatus"></p>
+    <!-- Original Header Section -->
+    <div class="header-section">
+        <div class="header-overlay"></div>
+        <div class="header-content">
+            <div class="icon-circle header-mb">
+                <!-- Heart icon SVG -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+            </div>
+            <h1 class="page-title header-mb">🩺 Health Report Assistant</h1>
+            <p class="page-description">
+                Upload your medical reports and get instant, AI-powered health insights
+            </p>
+            <div class="feature-tags">
+                <div class="feature-tag">
+                    <!-- Shield icon SVG -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <span>Secure & Private</span>
+                </div>
+                <div class="feature-tag">
+                    <!-- Sparkles icon SVG -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkles"><path d="M9.9 2.5l-3.6 5.8 5.8-3.6 5.8 3.6-3.6-5.8 3.6-5.8-5.8 3.6-5.8-3.6z"/><path d="M22 17.5l-2.7-4.4L15 17.5l2.7 4.4 2.7-4.4z"/><path d="M12.5 16.5l-1.8 2.9 2.9-1.8 2.9 1.8-1.8-2.9 1.8-2.9-2.9 1.8-2.9-1.8z"/></svg>
+                    <span>AI-Powered</span>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Ask Question -->
-    <div class="card">
-      <h2>2️⃣ Ask a question about your report or health</h2>
-      <input type="text" id="questionInput" placeholder="e.g., What is hypertension?" />
-      <button onclick="askQuestion()">Ask</button>
-      <p id="questionStatus"></p>
+    <!-- New Introduction Section -->
+    <div class="intro-section">
+        <div class="intro-content">
+            <h2 class="intro-heading">Understanding Your Health with AI</h2>
+            <p class="intro-paragraph">
+                Welcome to the <span class="highlight-bold">Health Report Assistant</span>, your personal AI-powered tool designed to help you understand your medical reports and health queries better. This project leverages advanced artificial intelligence to provide accessible and relevant health information.
+            </p>
+            <p class="intro-paragraph">
+                Simply <span class="highlight-primary">upload your medical report in PDF format</span>, and then <span class="highlight-primary">ask any health-related questions</span> you have. The chatbot will analyze the context from your report and, if needed, cross-reference it with general health guidelines from reliable sources like the World Health Organization (WHO) to give you comprehensive answers.
+            </p>
+            <p class="intro-paragraph"><span class="highlight-success">Your privacy and the security of your data are our top priority.</span></p>
+            <p class="intro-disclaimer">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                Please remember: This assistant provides information for educational purposes only and <span class="highlight-danger">should not replace professional medical advice</span>. Always consult with a qualified healthcare provider for diagnosis and treatment.
+            </p>
+        </div>
     </div>
 
-    <!-- Answer Display -->
-    <div class="card" id="answerCard" style="display: none;">
-      <h2>💡 Answer</h2>
-      <p id="answerText"></p>
-    </div>
-  </div>
+    <!-- Main Content (Cards and Features) -->
+    <div class="main-content-area">
+        <div class="card-grid">
 
-  <script src="app.js"></script>
+            <!-- Upload Card -->
+            <div class="card-item group">
+                <div class="card-icon-container bg-blue-to-indigo">
+                    <!-- Upload icon SVG -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                </div>
+                <h2 class="card-title text-blue-to-indigo">1️⃣ Upload Medical Report</h2>
+                <p class="card-description">Upload your PDF medical report for AI analysis</p>
+                <div class="input-wrapper">
+                    <input id="fileInput" type="file" accept=".pdf" />
+                </div>
+                <button id="uploadButton">
+                    <span class="button-content">
+                        <!-- Upload icon SVG for button -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                        <span id="uploadButtonText">Upload Report</span>
+                    </span>
+                </button>
+                <p id="uploadStatus" class="status-message"></p>
+            </div>
+
+            <!-- Question Card -->
+            <div class="card-item group">
+                <div class="card-icon-container bg-purple-to-pink">
+                    <!-- MessageCircle icon SVG -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle"><path d="M7.9 20A9.9 9.9 0 1 0 4 16.1L2 22Z"/></svg>
+                </div>
+                <h2 class="card-title text-purple-to-pink">2️⃣ Ask Health Question</h2>
+                <p class="card-description">Get instant answers about your health concerns</p>
+                <input id="questionInput" type="text" placeholder="e.g., What is hypertension? How to manage diabetes?" />
+                <button id="askButton">
+                    <span class="button-content">
+                        <!-- Sparkles icon SVG for button -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkles"><path d="M9.9 2.5l-3.6 5.8 5.8-3.6 5.8 3.6-3.6-5.8 3.6-5.8-5.8 3.6-5.8-3.6z"/><path d="M22 17.5l-2.7-4.4L15 17.5l2.7 4.4 2.7-4.4z"/><path d="M12.5 16.5l-1.8 2.9 2.9-1.8 2.9 1.8-1.8-2.9 1.8-2.9-2.9 1.8-2.9-1.8z"/></svg>
+                        <span id="askButtonText">Get Answer</span>
+                    </span>
+                </button>
+                <p id="questionStatus" class="status-message"></p>
+            </div>
+        </div>
+
+        <!-- Answer Display -->
+        <div class="answer-card" id="answerCard" style="display: none;">
+            <div class="card-icon-container bg-green-to-teal">
+                <!-- FileText icon SVG -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+            </div>
+            <h2 class="card-title text-green-to-teal">💡 AI Assistant's Response</h2>
+            <div class="answer-content">
+                <pre id="answerText" class="answer-text"></pre>
+            </div>
+            <div class="disclaimer-box">
+                <!-- Shield icon SVG for disclaimer -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <p>Disclaimer: This information is for educational purposes only. Always consult with your healthcare provider.</p>
+            </div>
+        </div>
+
+        <!-- Features Section -->
+        <div class="features-section">
+            <div class="feature-box">
+                <div class="icon-circle-small bg-blue-100">
+                    <!-- Upload icon SVG -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                </div>
+                <h3 class="feature-title">Easy Upload</h3>
+                <p class="feature-description">Simply upload your PDF medical reports</p>
+            </div>
+            <div class="feature-box">
+                <div class="icon-circle-small bg-purple-100">
+                    <!-- Sparkles icon SVG -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkles"><path d="M9.9 2.5l-3.6 5.8 5.8-3.6 5.8 3.6-3.6-5.8 3.6-5.8-5.8 3.6-5.8-3.6z"/><path d="M22 17.5l-2.7-4.4L15 17.5l2.7 4.4 2.7-4.4z"/><path d="M12.5 16.5l-1.8 2.9 2.9-1.8 2.9 1.8-1.8-2.9 1.8-2.9-2.9 1.8-2.9-1.8z"/></svg>
+                </div>
+                <h3 class="feature-title">AI Analysis</h3>
+                <p class="feature-description">Get intelligent insights powered by AI</p>
+            </div>
+            <div class="feature-box">
+                <div class="icon-circle-small bg-green-100">
+                    <!-- Shield icon SVG -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <h3 class="feature-title">Secure & Private</h3>
+                <p class="feature-description">Your data is protected and confidential</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
 </body>
 </html>
