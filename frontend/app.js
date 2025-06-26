@@ -1,5 +1,4 @@
-const backendUrl = "http://localhost:8000"; // Ensure your backend is running on this URL
-
+const backendUrl = "https://medical-rag-assistant.fly.dev"; 
 // Helper function to update status messages
 function updateStatus(elementId, message, type = '') {
     const element = document.getElementById(elementId);
